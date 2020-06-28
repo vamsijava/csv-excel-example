@@ -102,7 +102,6 @@ public class PersonDetailsResource {
 	/**
 	 * This API for deleted Person Details
 	 * 
-	 * @param personDetailsDTO
 	 * @return
 	 * @return
 	 */
