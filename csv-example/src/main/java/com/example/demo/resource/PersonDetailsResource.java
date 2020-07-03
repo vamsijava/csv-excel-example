@@ -73,8 +73,6 @@ public class PersonDetailsResource {
 
 	/**
 	 * This API for get Based on Person ID
-	 * 
-	 * @param personDetailsDTO
 	 * @param id
 	 * @return
 	 */
@@ -102,7 +100,6 @@ public class PersonDetailsResource {
 	/**
 	 * This API for deleted Person Details
 	 * 
-	 * @param personDetailsDTO
 	 * @return
 	 * @return
 	 */
