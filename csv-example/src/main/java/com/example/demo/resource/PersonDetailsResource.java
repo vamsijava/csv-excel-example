@@ -73,8 +73,6 @@ public class PersonDetailsResource {
 
 	/**
 	 * This API for get Based on Person ID
-	 * 
-	 * @param personDetailsDTO
 	 * @param id
 	 * @return
 	 */
