@@ -1,0 +1,62 @@
+Step 1:
+pom.xml:
+
+<dependency>
+    <groupId>io.springfox</groupId>
+    <artifactId>springfox-swagger2</artifactId>
+    <version>2.6.1</version>
+    <scope>compile</scope>
+</dependency>
+
+<dependency>
+    <groupId>io.springfox</groupId>
+    <artifactId>springfox-swagger-ui</artifactId>
+    <version>2.6.1</version>
+    <scope>compile</scope>
+</dependency>
+---------------------------------------------------------------------------------------------------------
+step 2:
+springboot.java(main class):
+
+@EnableSwagger2
+@SpringBootApplication
+public class TDSOnboardingApplication {
+	@Value("${spring.application.name}")
+	private String applicationName;
+	public static void main(String[] args) {
+		SpringApplication.run(TDSOnboardingApplication.class, args);
+	}
+	@Bean
+	public Docket api() {
+		return new SwaggerConfig().getSwaggerDocker(applicationName);
+	}
+}
+--------------------------------------------------------------------------------------------------------------
+step 3:
+SwaggerConfig.java:
+public class SwaggerConfig {
+	public Docket getSwaggerDocker(String applicationName) {
+		return new Docket(DocumentationType.SWAGGER_2)
+				.select()
+				.apis(RequestHandlerSelectors.any())
+				.paths(Predicates.not(PathSelectors.regex("/error")))
+				.build()
+				.apiInfo(metadata(applicationName))
+				.useDefaultResponseMessages(false)
+				.securitySchemes(new ArrayList<>(Arrays.asList(new ApiKey("Bearer %token", "Authorization", "Header"))))
+				.tags(new Tag("users", "Operations about users"))
+				.tags(new Tag("ping", "Just a ping"))
+				.genericModelSubstitutes(Optional.class);
+	}
+
+	private ApiInfo metadata(String applicationName) {
+		return new ApiInfoBuilder()
+				.title(StringUtils.capitalize(applicationName) + " Api Documentation")
+				.description("")
+				.version("1.0.0")
+				.license("E&Y License")
+				.contact(new Contact(null, null, "admin@in.ey.com"))
+				.build();
+	}
+}
+--------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,163 @@
+Spring Boot - Sending Email:
+===========================
+step 1:
+pom.xml:
+<dependency>
+   <groupId>org.springframework.boot</groupId>
+   <artifactId>spring-boot-starter-mail</artifactId>
+</dependency>
+step 2:
+application.yml:
+---------------
+spring:
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: tds.local.exceptions@gmail.com
+    password: ribzamxvrtakvukz
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+step 3:
+create a class:
+---------------
+@Service
+public class EmailService {
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+	@Value("${spring.mail.username}")
+	private String MAIL_USERNAME;
+
+	@Value("${spring.mail.password}")
+	private String MAIL_PASSWORD;
+
+	@Value("${spring.mail.host}")
+	private String MAIL_HOST;
+
+	@Value("${spring.mail.port}")
+	private String MAIL_PORT;
+
+	@Value("${spring.mail.properties.mail.smtp.auth}")
+	private String MAIL_AUTH_ENABLED;
+
+	@Value("${spring.mail.properties.mail.smtp.starttls.enable}")
+	private String MAIL_STARTTLS_ENABLED;
+
+	@Autowired
+	public JavaMailSender emailSender;
+	
+	public void sendMessageWithAttachment(String to, String subject, String text, String pathToAttachment) {
+		try {
+			MimeMessage message = emailSender.createMimeMessage();
+			// pass 'true' to the constructor to create a multipart message
+			MimeMessageHelper helper = new MimeMessageHelper(message, true);
+			helper.setTo(to);
+			helper.setSubject(subject);
+			helper.setText(text);
+			if (pathToAttachment != null) {
+				FileSystemResource file = new FileSystemResource(new File(pathToAttachment));
+				helper.addAttachment("Invoice", file);
+			}
+			emailSender.send(message);
+		} catch (MessagingException e) {
+			logger.error("Error occured at sendMessagewithAttachment", e);
+		}
+	}
+	
+	private Properties getMailProperties() {
+		Properties prop = new Properties();
+		prop.put("mail.smtp.host", MAIL_HOST);
+		prop.put("mail.smtp.port", MAIL_PORT);
+		prop.put("mail.smtp.auth", MAIL_AUTH_ENABLED);
+		prop.put("mail.smtp.starttls.enable", MAIL_STARTTLS_ENABLED);
+		return prop;
+	}
+	
+	public void sendHtmlTemplateNotification(Email email, String htmlBody) throws MessagingException {
+		MimeMessage mail = emailSender.createMimeMessage();
+		MimeMessageHelper messageHelper = new MimeMessageHelper(mail, true);
+		messageHelper.setTo(email.getTo());
+		messageHelper.setFrom(email.getFrom());
+		messageHelper.setSubject(email.getSubject());
+		messageHelper.setText(htmlBody, true);
+		emailSender.send(mail);
+	}
+	
+	
+	public void logAndEmailException(String message, Exception e, String exceptionEmailId) {
+		String subject;
+		try {
+			subject = "TDS" + " Exception on host : " + java.net.InetAddress.getLocalHost().getHostName() + ", "
+					+ message;
+			logger.error(ExceptionUtils.getStackTrace(e));
+			send(ExceptionUtils.getStackTrace(e), subject, exceptionEmailId, new HashMap<String, String>());
+		} catch (UnknownHostException e1) {
+			logger.warn("Unable to determine the hostname");
+		}
+	}
+
+	public void send(String emailBody, String emailSubject, String emailIds, Map<String, String> map) {
+		// sets SMTP server properties
+		Properties prop = getMailProperties();
+		try {
+
+			// creates a new session with an authenticator
+			Authenticator auth = new Authenticator() {
+				@Override
+				public PasswordAuthentication getPasswordAuthentication() {
+					return new PasswordAuthentication(MAIL_USERNAME, MAIL_PASSWORD);
+				}
+			};
+			Session session = Session.getInstance(prop, auth);
+
+			// creates a new e-mail message
+			Message msg = new MimeMessage(session);
+			// Note, the from address is overridden by the KU exchange sever!!!
+			msg.setFrom(new InternetAddress(MAIL_USERNAME));
+			List<InternetAddress> toAddresses = new ArrayList<InternetAddress>();
+			for (String email : emailIds.split(",")) {
+				toAddresses.add(new InternetAddress(email));
+			}
+			InternetAddress[] recipients = {};
+			msg.setRecipients(Message.RecipientType.TO, toAddresses.toArray(recipients));
+			msg.setSubject(emailSubject);
+			msg.setSentDate(new Date());
+			// creates message partm
+			BodyPart messageBodyPart = new MimeBodyPart();
+			messageBodyPart.setContent(emailBody.toString(), "text/html");
+			// creates multi-part
+			Multipart multipart = new MimeMultipart();
+			multipart.addBodyPart(messageBodyPart);
+			if (map != null) {
+				for (String key : map.keySet()) {
+					// attach the image file
+					MimeBodyPart imagePart = new MimeBodyPart();
+					imagePart.setHeader("Content-ID", "<" + key + ">");
+					imagePart.setDisposition(Part.INLINE);
+
+					try {
+						imagePart.attachFile(map.get(key));
+					} catch (IOException ex) {
+						logger.warn("Mail exception: ", ex);
+					}
+					multipart.addBodyPart(imagePart);
+				}
+			}
+
+			msg.setContent(multipart);
+
+			logger.info("Email Subject: '" + emailSubject + "'");
+			logger.info("Email from: '" + MAIL_USERNAME + "' to: " + emailIds);
+
+			Transport.send(msg);
+		} catch (AddressException ae) {
+			logger.error("Issue sending email AddressException " + ae.getMessage());
+		} catch (MessagingException me) {
+			logger.error("Issue sending email AddressException " + me.getMessage(), me);
+		}
+	}
+}
+

@@ -1,0 +1,68 @@
+Feign client:
+-------------
+step 1:
+pom.xml
+-------
+<dependency>
+	<groupId>org.springframework.cloud</groupId>
+	<artifactId>spring-cloud-starter-openfeign</artifactId>
+</dependency>
+
+step 2:
+Enable Feign client in Mani() class:
+------------------------------------
+@EnableFeignClients
+
+step 3:
+create a new package in servie:
+-------------------------------
+create a interface and use @FeignClient(url = "" , name = "")
+-------------------------------------------------------------
+@FeignClient(url = "${feign.challans.app.url}", name = "challans")
+public interface ChallansClient {
+	// Get Data from challan servies
+	@GetMapping("/data/byquarter")
+	public List<ChallanReceiptDTO> getChallanData(@RequestHeader("X-TENANT-ID") String tenantId,
+			@RequestParam("assessmentYear") int assessmentYear, @RequestParam("quarter") String quarter,
+			@RequestHeader("TAN-NUMBER") String tanNumber);
+}
+
+step 4:
+added feign url in application.yml flie:
+-----------------------------------------
+feign:
+  masters:
+    app:
+      url: http://localhost:8001/api/masters
+  ingestion:
+    app:
+      url: http://localhost:8004/api/ingestion
+  validation:
+    app:
+      url: http://localhost:8008/api/validation
+  returns:
+    app:
+      url: http://localhost:8007/api/returns
+  onboarding:
+    app:
+      url: http://localhost:8005/api/onboarding
+  authorization:
+    app:
+      url: http://localhost:8009/api/authorization
+  challans:
+    app:
+      url: http://localhost:8002/api/challans
+      
+
+step 4:
+when your need data use and first autowired that services:
+-----------------------------------------------------------
+	@Autowired
+	private ChallansClient challansClient;
+
+ResponseEntity<ApiStatus<NopCessRateSurageRateDTO>> getNatureOfPayment = challansClient
+						.getNatureOfPaymentMasterRecordBasedonSection(section);
+NopCessRateSurageRateDTO nopSurchargeCess = getNatureOfPayment.getBody().getData();
+
+
+

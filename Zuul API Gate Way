@@ -1,0 +1,95 @@
+Zuul API Gateway:
+================
+Step 1:
+pom.xml
+-------
+<dependency>
+	<groupId>org.springframework.cloud</groupId>
+	<artifactId>spring-cloud-starter-netflix-zuul</artifactId>
+</dependency>
+		
+step 2:
+Mani() class Enable the Zuul
+----------------------------
+@EnableZuulProxy
+
+step 3:
+create new class for pre and post and error filter
+-------------------------------------------------
+public class SimpleFilter extends ZuulFilter {
+
+  private static Logger log = LoggerFactory.getLogger(SimpleFilter.class);
+
+  @Override
+  public String filterType() {
+    return "pre";
+  }
+
+  @Override
+  public int filterOrder() {
+    return 1;
+  }
+
+  @Override
+  public boolean shouldFilter() {
+    return true;
+  }
+
+  @Override
+  public Object run() {
+    RequestContext ctx = RequestContext.getCurrentContext();
+    HttpServletRequest request = ctx.getRequest();
+
+    log.info(String.format("%s request to %s", request.getMethod(), request.getRequestURL().toString()));
+
+    return null;
+  }
+
+}
+
+step 4:
+Added application.yml file:
+--------------------------
+zuul:
+   host:
+    connect-timeout-millis: 600000
+    socket-timeout-millis: 600000
+    time-to-live: 600000
+  sensitiveHeaders: Cookie,Set-Cookie
+  routes:
+    ingestion:
+      path: /api/ingestion/**
+      url: http://localhost:8004/api/ingestion
+    validation:
+      path: /api/validation/**
+      url: http://localhost:8008/api/validation
+    masters:
+      path: /api/masters/**
+      url: http://localhost:8001/api/masters
+    returns:
+      path: /api/returns/**
+      url: http://localhost:8007/api/returns
+    challans:
+      path: /api/challans/**
+      url: http://localhost:8002/api/challans
+    onboarding:
+      path: /api/onboarding/**
+      url: http://localhost:8005/api/onboarding
+    dashboards:
+      path: /api/dashboards/**
+      url: http://localhost:8003/api/dashboards
+    ui-logger:
+      path: /api/ui-logger/**
+      url: http://localhost:8017/api/ui-logger
+    reports:
+      path: /api/reports/**
+      url: http://localhost:8010/api/reports
+    fvu:
+      path: /api/fvu/**
+      url: http://localhost:8020/api/fvu
+    spark-reports:
+      path: /api/spark/reports/**
+      url: http://localhost:8016/api/spark/reports
+
+
+
